@@ -54,6 +54,8 @@ export default function Login() {
           <Image src="/jamaatLogo.png" alt="logo" width={150} height={150} />
         </div>
 
+        <h2 className="text-center text-2xl mb-6" >Kunsafar Survey</h2>
+
         <Form
           name="login"
           onFinish={onFinish}
