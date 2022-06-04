@@ -3,6 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-.padding-0-card .ant-card-body{
-    padding: 0;
+.padding-0-card .ant-card-body {
+  padding: 0;
 }

@@ -15,13 +15,13 @@
 //         view: "Grid view",
 //         filterByFormula: `({subsector} = 'FAKHRI-B')`,
 //       }).eachPage(function page(records, fetchNextPage) {
-    
+
 //         records.forEach(function(record) {
 //             finalData.push(record)
 //         });
-    
+
 //         fetchNextPage();
-    
+
 //     }, function done(err) {
 //         // console.log("finalData",finalData);
 //         if (err) { console.error(err); return; }
