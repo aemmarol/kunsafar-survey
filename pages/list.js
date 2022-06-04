@@ -2,6 +2,7 @@ import { Button, Card, Col, Layout, Modal, Row, Spin } from "antd";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { FiAlertCircle, FiXCircle, FiCheckCircle } from "react-icons/fi";
+import { FaPhoneAlt, FaWhatsapp } from "react-icons/fa"
 import Airtable from "airtable";
 import { useRouter } from "next/router";
 import { DeliveryModal } from "../components/deliveryModal";
@@ -134,6 +135,13 @@ const ListPage = () => {
       : "";
   };
 
+  const handleWaclick =(waNumber)=>{
+    window.open(`https://wa.me/${waNumber}`, '_blank', 'noopener,noreferrer')
+  }
+  const handleCall =(callNumber)=>{
+    window.open(`tel:${callNumber}`);
+  }
+
   const renderFileCards = () => {
     let filteredFileList = orderBy(
       fileDetails.filter((val) => val.status === activeState),
@@ -168,9 +176,18 @@ const ListPage = () => {
                         <span className="text-xs">Name</span>
                         <p className="text-sm">{val.full_name}</p>
                       </Col>
-                      <Col xs={16}>
+                      <Col xs={24}>
                         <span className="text-xs">Mobile Number</span>
-                        <p className="text-sm">{val.Contact}</p>
+                        <div className="flex items-center" >
+                          <p className="text-sm">{val.Contact}</p>
+                          <span onClick={()=>handleWaclick(val.Contact)} className="text-lg ml-4">
+                            <FaWhatsapp />
+                          </span>
+                          <span onClick={()=>handleCall(val.Contact)} className="text-lg ml-4">
+                            <FaPhoneAlt />
+                          </span>
+
+                        </div>
                       </Col>
                       <Col xs={8}>
                         <span className="text-xs">Age</span>
