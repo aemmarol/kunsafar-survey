@@ -21,7 +21,6 @@ export const DeliveryModal = ({
 
   const onFinish = async (values) => {
     const user = JSON.parse(localStorage.getItem("kunUser"));
-    console.log("values", values, user);
     let data = {
       status: values.status,
       ["Reported By"]: user.name,
