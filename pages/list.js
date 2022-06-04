@@ -5,13 +5,46 @@ import { FiAlertCircle, FiXCircle, FiCheckCircle } from "react-icons/fi";
 import Airtable from "airtable";
 import { useRouter } from "next/router";
 import { DeliveryModal } from "../components/deliveryModal";
+import { groupBy, orderBy } from "lodash";
 
 const { Header, Content } = Layout;
+
+export class Status {
+  // Create new instances of the same class as static attributes
+  static called = new Status("Called");
+  static toBeCalled = new Status("To Be Called");
+  static callAgain = new Status("Call Again");
+  static notContactable = new Status("Not Contactable");
+
+  constructor(name) {
+    this.status = name;
+  }
+}
+
+export const zoneColors = {
+  BADRI: "#A9D18E",
+  BURHANI: "#9954CC",
+  EZZI: "#FF75AD",
+  FATEMI: "#FFC000",
+  HAKIMI: "#4472C4",
+  JAMALI: "#AFABAB",
+  MOHAMMEDI: "#767171",
+  NAJMI: "#D3E210",
+  SAIFEE: "#8FAADC",
+  SHUJAYI: "#00B050",
+  VAJIHI: "#C55A11",
+  ZAINEE: "#5B9BD5",
+};
+
+function getRandomColor() {
+  let color = "hsl(" + Math.random() * 360 + ", 100%, 75%)";
+  return color;
+}
 
 const ListPage = () => {
   const airtableUserBase = new Airtable({
     apiKey: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY,
-  }).base("appinryr8YXqHWdt5");
+  }).base("app6aPGOFXFVaykGO");
   const fileTableList = airtableUserBase("File List");
 
   const router = useRouter();
@@ -22,9 +55,10 @@ const ListPage = () => {
   const [selectedFile, setSelectedFile] = useState({});
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [displayLoader, setDisplayLoader] = useState(true);
+  const [activeState, setActiveState] = useState(Status.toBeCalled.status);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(localStorage.getItem("kunUser"));
     if (!user) {
       router.push("/");
     } else {
@@ -46,7 +80,7 @@ const ListPage = () => {
       .select({
         maxRecords: 1200,
         view: "Grid view",
-        filterByFormula: `({zone} = '${zone}')`,
+        filterByFormula: `({Zone} = '${zone}')`,
       })
       .eachPage(
         function page(records, fetchNextPage) {
@@ -71,9 +105,11 @@ const ListPage = () => {
   };
 
   const getFileDetails = (data) => {
-    let sectorFileData = data.filter((val) =>
-      userDetails.assignedArea.includes(val.subsector)
-    );
+    let userRole = userDetails.userRole;
+    let sectorFileData =
+      userRole === "Masool"
+        ? data
+        : data.filter((val) => userDetails.assignedArea.includes(val.Building));
     setFileDetails(sectorFileData);
   };
 
@@ -83,17 +119,107 @@ const ListPage = () => {
   };
 
   const handleLogout = () => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(localStorage.getItem("kunUser"));
     if (user) {
       localStorage.clear();
       router.push("/");
     }
   };
 
+  const getSectorName = () => {
+    return userDetails
+      ? userDetails.userRole === "Masool"
+        ? userDetails.zone[0]
+        : userDetails.assignedArea && userDetails.assignedArea.join(" , ")
+      : "";
+  };
+
+  const renderFileCards = () => {
+    let filteredFileList = orderBy(
+      fileDetails.filter((val) => val.status === activeState),
+      ["file_number"],
+      ["asc"]
+    );
+
+    let buildingWiseFiles = groupBy(filteredFileList, "Building");
+    let fileList = Object.keys(buildingWiseFiles).map((key) => {
+      let fileWiseList = groupBy(buildingWiseFiles[key], "file_number");
+      let fileWiseListKeys = Object.keys(fileWiseList).map(
+        (key) => fileWiseList[key]
+      );
+      return fileWiseListKeys;
+    });
+    return Object.keys(buildingWiseFiles).map((key, index) => {
+      return (
+        <div key={key}>
+          <h1 className="text-lg my-2">{key}</h1>
+          {fileList[index].map((list) => {
+            let bgColor = getRandomColor();
+            return list.map((val) => (
+              <Card
+                key={val.id}
+                className=" padding-0-card rounded-lg mb-2"
+                style={{ backgroundColor: bgColor }}
+              >
+                <div className="flex px-2 py-2">
+                  <div className="flex flex-col flex-grow">
+                    <Row gutter={[8, 8]}>
+                      <Col xs={24}>
+                        <span className="text-xs">Name</span>
+                        <p className="text-sm">{val.full_name}</p>
+                      </Col>
+                      <Col xs={16}>
+                        <span className="text-xs">Mobile Number</span>
+                        <p className="text-sm">{val.Contact}</p>
+                      </Col>
+                      <Col xs={8}>
+                        <span className="text-xs">Age</span>
+                        <p className="text-sm">{val.Age}</p>
+                      </Col>
+                      <Col xs={12}>
+                        <span className="text-xs">File No</span>
+                        <p className="text-sm">{val.file_number}</p>
+                      </Col>
+                      <Col xs={12}>
+                        <span className="text-xs">Building</span>
+                        <p className="text-sm">{val.Building}</p>
+                      </Col>
+                      <Col xs={24}>
+                        <span className="text-xs">HOF Name</span>
+                        <p className="text-sm">{val.hof_name}</p>
+                      </Col>
+                      <Col xs={12}>
+                        <span className="text-xs">HOF Contact</span>
+                        <p className="text-sm">{val.hof_contact}</p>
+                      </Col>
+                    </Row>
+                  </div>
+                  <div className="ml-4">
+                    <Button
+                      className="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white border border-blue-500 hover:border-transparent rounded"
+                      // type="primary"
+                      disabled={
+                        val.status === Status.called.status ||
+                        val.status === Status.notContactable.status
+                      }
+                      onClick={() => handleShowDeliveryModal(val)}
+                    >
+                      status
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ));
+          })}
+        </div>
+      );
+    });
+  };
+
   return (
     <Layout className="min-h-screen overflow-y-auto ">
       <Head>
-        <title>AEM Distribution</title>
+        <title>Kunsafar Survey</title>
         <meta name="description" content="Generated by create next app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -119,28 +245,32 @@ const ListPage = () => {
           <div className="w-full flex items-start mb-8">
             <h3 className="text-2xl">Sectors</h3>
             <h3 className="text-2xl mx-1">:</h3>
-            <p className="flex-grow text-xl mt-1">
-              {userDetails &&
-                userDetails.assignedArea &&
-                userDetails.assignedArea.join(" , ")}
-            </p>
+            <p className="flex-grow text-xl mt-1">{getSectorName()}</p>
           </div>
           <Row gutter={[16, 16]}>
             <Col xs={12} md={8} lg={6} xl={4}>
-              <Card className="p-0 rounded-lg">
+              <Card
+                style={{
+                  backgroundColor:
+                    activeState === Status.toBeCalled.status
+                      ? "#dddddd"
+                      : "#ffffff",
+                }}
+                onClick={() => setActiveState(Status.toBeCalled.status)}
+                className="p-0 rounded-lg"
+              >
+                <p className="text-sm text-center mb-2">To Be Called</p>
                 <div className="flex">
-                  <span className="flex items-center justify-center w-12 text-5xl mr-4 text-amber-500">
+                  <span className="flex items-center justify-center w-12 text-5xl mr-4 text-indigo-500">
                     <FiAlertCircle />
                   </span>
                   <div className="flex flex-col flex-grow">
-                    <p className="text-xs">pending</p>
-                    <p className="text-4xl text-amber-500">
+                    <p className="text-4xl text-indigo-500">
                       {
                         fileDetails.filter(
                           (val) =>
                             !val.status ||
-                            val.status === "To be dispatched" ||
-                            val.status === "Dispatched"
+                            val.status === Status.toBeCalled.status
                         ).length
                       }
                     </p>
@@ -149,17 +279,27 @@ const ListPage = () => {
               </Card>
             </Col>
             <Col xs={12} md={8} lg={6} xl={4}>
-              <Card className="p-0 rounded-lg">
+              <Card
+                style={{
+                  backgroundColor:
+                    activeState === Status.callAgain.status
+                      ? "#dddddd"
+                      : "#ffffff",
+                }}
+                onClick={() => setActiveState(Status.callAgain.status)}
+                className="p-0 rounded-lg"
+              >
+                <p className="text-sm text-center mb-2">Call Again</p>
                 <div className="flex">
-                  <div className="flex items-center justify-center w-12 text-5xl mr-4 text-lime-600">
+                  <div className="flex items-center justify-center w-12 text-5xl mr-4 text-amber-600">
                     <FiCheckCircle />
                   </div>
                   <div className="flex flex-col flex-grow">
-                    <p className="text-xs">delivered</p>
-                    <p className="text-4xl text-lime-600">
+                    <p className="text-4xl text-amber-600">
                       {
-                        fileDetails.filter((val) => val.status === "Delivered")
-                          .length
+                        fileDetails.filter(
+                          (val) => val.status === Status.callAgain.status
+                        ).length
                       }
                     </p>
                   </div>
@@ -167,17 +307,55 @@ const ListPage = () => {
               </Card>
             </Col>
             <Col xs={12} md={8} lg={6} xl={4}>
-              <Card className="p-0 rounded-lg">
+              <Card
+                style={{
+                  backgroundColor:
+                    activeState === Status.called.status
+                      ? "#dddddd"
+                      : "#ffffff",
+                }}
+                onClick={() => setActiveState(Status.called.status)}
+                className="p-0 rounded-lg"
+              >
+                <p className="text-sm text-center mb-2">Called</p>
+                <div className="flex">
+                  <div className="flex items-center justify-center w-12 text-5xl mr-4 text-lime-600">
+                    <FiCheckCircle />
+                  </div>
+                  <div className="flex flex-col flex-grow">
+                    <p className="text-4xl text-lime-600">
+                      {
+                        fileDetails.filter(
+                          (val) => val.status === Status.called.status
+                        ).length
+                      }
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={12} md={8} lg={6} xl={4}>
+              <Card
+                style={{
+                  backgroundColor:
+                    activeState === Status.notContactable.status
+                      ? "#dddddd"
+                      : "#ffffff",
+                }}
+                onClick={() => setActiveState(Status.notContactable.status)}
+                className="p-0 rounded-lg"
+              >
+                <p className="text-sm text-center mb-2">Not Contactable</p>
                 <div className="flex">
                   <div className="flex items-center justify-center w-12 text-5xl mr-4 text-red-600">
                     <FiXCircle />
                   </div>
                   <div className="flex flex-col flex-grow">
-                    <p className="text-xs">returned</p>
                     <p className="text-4xl text-red-600">
                       {
-                        fileDetails.filter((val) => val.status === "Returned")
-                          .length
+                        fileDetails.filter(
+                          (val) => val.status === Status.notContactable.status
+                        ).length
                       }
                     </p>
                   </div>
@@ -186,73 +364,14 @@ const ListPage = () => {
             </Col>
           </Row>
 
+          {/* add search logic */}
+
           <div className="w-full flex items-start my-8">
-            <h3 className="text-2xl">Pending List</h3>
+            <h3 className="text-2xl">{activeState + " List"}</h3>
             <h3 className="text-2xl mx-1">:</h3>
           </div>
-          {userDetails &&
-          userDetails.assignedArea &&
-          userDetails.assignedArea.length > 0
-            ? userDetails.assignedArea.map((area) => (
-                <div key={area}>
-                  <h1 className="text-lg my-2">{area}</h1>
-                  {fileDetails
-                    .filter(
-                      (value) =>
-                        !value.status ||
-                        value.status === "To be dispatched" ||
-                        value.status === "Dispatched"
-                    )
-                    .filter((areaValue) => areaValue.subsector === area)
-                    .map((val, index) => (
-                      <Card
-                        key={val.id}
-                        className=" padding-0-card rounded-lg mb-2"
-                      >
-                        <div className="flex px-2 py-2">
-                          <div className="flex flex-col flex-grow">
-                            <Row gutter={[8, 8]}>
-                              <Col xs={24}>
-                                <span className="text-xs">Name</span>
-                                <p className="text-sm">{val.full_name}</p>
-                              </Col>
-                              <Col xs={12}>
-                                <span className="text-xs">File No</span>
-                                <p className="text-sm">{val.file_number}</p>
-                              </Col>
-                              <Col xs={12}>
-                                <span className="text-xs">Mobile Number</span>
-                                <p className="text-sm">{val.mobile_no}</p>
-                              </Col>
-                              <Col xs={12}>
-                                <span className="text-xs">Building</span>
-                                <p className="text-sm">{val.building}</p>
-                              </Col>
-                              <Col xs={12}>
-                                <span className="text-xs">Room No</span>
-                                <p className="text-sm">{val.room_no}</p>
-                              </Col>
-                              <Col xs={24}>
-                                <span className="text-xs">Address</span>
-                                <p className="text-sm">{val.address}</p>
-                              </Col>
-                            </Row>
-                          </div>
-                          <div className="ml-4">
-                            <Button
-                              className="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white border border-blue-500 hover:border-transparent rounded"
-                              disabled={val.status !== "Dispatched"}
-                              onClick={() => handleShowDeliveryModal(val)}
-                            >
-                              Deliver
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                </div>
-              ))
-            : null}
+
+          {renderFileCards()}
         </div>
       </Content>
       {showDeliveryModal ? (

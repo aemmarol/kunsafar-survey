@@ -1,6 +1,7 @@
 import Airtable from "airtable";
-import { Button, Col, Form, Input, Modal, Row, Select } from "antd";
-import { useEffect, useState } from "react";
+import { Button, Col, Form, Input, Modal, Radio, Row, Select } from "antd";
+import { useState } from "react";
+import { Status } from "../pages/list";
 
 export const DeliveryModal = ({
   showDeliveryModal,
@@ -10,20 +11,24 @@ export const DeliveryModal = ({
 }) => {
   const airtableUserBase = new Airtable({
     apiKey: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY,
-  }).base("appinryr8YXqHWdt5");
+  }).base("app6aPGOFXFVaykGO");
   const fileTableList = airtableUserBase("File List");
 
   const [deliveryForm] = Form.useForm();
 
   const [selectValue, setselectValue] = useState("");
+  const [selectRadioValue, setselectRadioValue] = useState("");
 
   const onFinish = async (values) => {
     console.log("values", values);
     let data = {
       status: values.status,
     };
-    if (values.returnMsg) {
-      data["reasonForReturn"] = values.returnMsg;
+    if (values.noZiyaratReason) {
+      data["Reason for No Ziyaraat"] = values.noZiyaratReason;
+    }
+    if (values.ziyaratStatus) {
+      data["Ziyaraat_status"] = values.ziyaratStatus;
     }
     await fileTableList.update(
       [
@@ -48,6 +53,10 @@ export const DeliveryModal = ({
     setselectValue(e);
   };
 
+  const handleRadioSelectChange = (e) => {
+    setselectRadioValue(e.target.value);
+  };
+
   return (
     <Modal
       title="Update Delivery Status"
@@ -61,20 +70,16 @@ export const DeliveryModal = ({
           <p className="text-sm">{fileValue.full_name}</p>
         </Col>
         <Col xs={12}>
-          <span className="text-xs">File No</span>
+          <span className="text-xs">Age</span>
+          <p className="text-sm">{fileValue.Age}</p>
+        </Col>
+        <Col xs={12}>
+          <span className="text-xs">File Number</span>
           <p className="text-sm">{fileValue.file_number}</p>
         </Col>
         <Col xs={12}>
           <span className="text-xs">Building</span>
-          <p className="text-sm">{fileValue.building}</p>
-        </Col>
-        <Col xs={12}>
-          <span className="text-xs">Room No</span>
-          <p className="text-sm">{fileValue.room_no}</p>
-        </Col>
-        <Col xs={12}>
-          <span className="text-xs">Mobile Number</span>
-          <p className="text-sm">{fileValue.mobile_no}</p>
+          <p className="text-sm">{fileValue.Building}</p>
         </Col>
       </Row>
       <Form
@@ -94,19 +99,44 @@ export const DeliveryModal = ({
           ]}
         >
           <Select onChange={handleSelectChange}>
-            <Select.Option value="Delivered">Delivered</Select.Option>
-            <Select.Option value="Returned">Returned</Select.Option>
+            <Select.Option value={Status.callAgain.status}>
+              {Status.callAgain.status}
+            </Select.Option>
+            <Select.Option value={Status.called.status}>
+              {Status.called.status}
+            </Select.Option>
+            <Select.Option value={Status.notContactable.status}>
+              {Status.notContactable.status}
+            </Select.Option>
           </Select>
         </Form.Item>
 
-        {selectValue === "Returned" ? (
+        {selectValue === Status.called.status ? (
           <Form.Item
-            label="Reason for return"
-            name="returnMsg"
+            label="Is Ziyarat Done?"
+            name="ziyaratStatus"
             rules={[
               {
                 required: true,
-                message: "Please enter reason for return!",
+                message: "Please select ziyarat status!",
+              },
+            ]}
+          >
+            <Radio.Group onChange={handleRadioSelectChange}>
+              <Radio value="Done">Done</Radio>
+              <Radio value="Not Done">Not Done</Radio>
+            </Radio.Group>
+          </Form.Item>
+        ) : null}
+
+        {selectRadioValue === "Not Done" ? (
+          <Form.Item
+            label="Reason for no ziyarat?"
+            name="noZiyaratReason"
+            rules={[
+              {
+                required: true,
+                message: "Please enter reason for no ziyarat!",
               },
             ]}
           >
