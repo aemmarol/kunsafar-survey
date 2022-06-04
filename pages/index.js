@@ -54,7 +54,11 @@ export default function Login() {
           <Image src="/jamaatLogo.png" alt="logo" width={150} height={150} />
         </div>
 
-        <h2 className="text-center text-2xl mb-6" >Kunsafar Survey</h2>
+        <div className="w-full flex justify-center mb-4">
+          <Image src="/karbala.jpeg" alt="img" width={300} height={200} />
+        </div>
+
+        <h2 className="text-center text-2xl mb-6">Kunsafar Survey</h2>
 
         <Form
           name="login"

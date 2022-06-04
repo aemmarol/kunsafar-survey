@@ -20,15 +20,21 @@ export const DeliveryModal = ({
   const [selectRadioValue, setselectRadioValue] = useState("");
 
   const onFinish = async (values) => {
-    console.log("values", values);
+    const user = JSON.parse(localStorage.getItem("kunUser"));
+    console.log("values", values, user);
     let data = {
       status: values.status,
+      ["Reported By"]: user.name,
+      ["Reported By Contact"]: user.contact,
     };
     if (values.noZiyaratReason) {
       data["Reason for No Ziyaraat"] = values.noZiyaratReason;
     }
     if (values.ziyaratStatus) {
       data["Ziyaraat_status"] = values.ziyaratStatus;
+    }
+    if (values.yearofZiyarat) {
+      data["Year of Ziyarat"] = Number(values.yearofZiyarat);
     }
     await fileTableList.update(
       [
@@ -129,7 +135,8 @@ export const DeliveryModal = ({
           </Form.Item>
         ) : null}
 
-        {selectRadioValue === "Not Done" ? (
+        {selectValue === Status.called.status &&
+        selectRadioValue === "Not Done" ? (
           <Form.Item
             label="Reason for no ziyarat?"
             name="noZiyaratReason"
@@ -140,7 +147,51 @@ export const DeliveryModal = ({
               },
             ]}
           >
-            <Input.TextArea />
+            <Select>
+              <Select.Option value="Imkaan Nathi Thayu">
+                Imkaan Nathi Thayu
+              </Select.Option>
+              <Select.Option value="Cannot Go Alone">
+                Cannot Go Alone
+              </Select.Option>
+              <Select.Option value="Financial Reason">
+                Financial Reason
+              </Select.Option>
+              <Select.Option value="Medical Reason">
+                Medical Reason
+              </Select.Option>
+              <Select.Option value="No Passport">No Passport</Select.Option>
+              <Select.Option value="Planning Shortly">
+                Planning Shortly
+              </Select.Option>
+            </Select>
+          </Form.Item>
+        ) : null}
+
+        {selectValue === Status.called.status && selectRadioValue === "Done" ? (
+          <Form.Item
+            label="Year of Ziyarat"
+            name="yearofZiyarat"
+            rules={[
+              {
+                required: true,
+                message: "Please enter year of ziyarat!",
+              },
+              {
+                max: 4,
+                message: "Please enter valid year!",
+              },
+              () => ({
+                validator(_, value) {
+                  if (!value || !isNaN(value)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("Please enter valid year!"));
+                },
+              }),
+            ]}
+          >
+            <Input />
           </Form.Item>
         ) : null}
 

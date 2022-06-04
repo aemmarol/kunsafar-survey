@@ -2,7 +2,7 @@ import { Button, Card, Col, Layout, Modal, Row, Spin } from "antd";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { FiAlertCircle, FiXCircle, FiCheckCircle } from "react-icons/fi";
-import { FaPhoneAlt, FaWhatsapp } from "react-icons/fa"
+import { FaPhoneAlt, FaWhatsapp } from "react-icons/fa";
 import Airtable from "airtable";
 import { useRouter } from "next/router";
 import { DeliveryModal } from "../components/deliveryModal";
@@ -135,12 +135,12 @@ const ListPage = () => {
       : "";
   };
 
-  const handleWaclick =(waNumber)=>{
-    window.open(`https://wa.me/${waNumber}`, '_blank', 'noopener,noreferrer')
-  }
-  const handleCall =(callNumber)=>{
+  const handleWaclick = (waNumber) => {
+    window.open(`https://wa.me/${waNumber}`, "_blank", "noopener,noreferrer");
+  };
+  const handleCall = (callNumber) => {
     window.open(`tel:${callNumber}`);
-  }
+  };
 
   const renderFileCards = () => {
     let filteredFileList = orderBy(
@@ -178,15 +178,20 @@ const ListPage = () => {
                       </Col>
                       <Col xs={24}>
                         <span className="text-xs">Mobile Number</span>
-                        <div className="flex items-center" >
+                        <div className="flex items-center">
                           <p className="text-sm">{val.Contact}</p>
-                          <span onClick={()=>handleWaclick(val.Contact)} className="text-lg ml-4">
+                          <span
+                            onClick={() => handleWaclick(val.Contact)}
+                            className="text-lg ml-4"
+                          >
                             <FaWhatsapp />
                           </span>
-                          <span onClick={()=>handleCall(val.Contact)} className="text-lg ml-4">
+                          <span
+                            onClick={() => handleCall(val.Contact)}
+                            className="text-lg ml-4"
+                          >
                             <FaPhoneAlt />
                           </span>
-
                         </div>
                       </Col>
                       <Col xs={8}>
@@ -207,7 +212,21 @@ const ListPage = () => {
                       </Col>
                       <Col xs={12}>
                         <span className="text-xs">HOF Contact</span>
-                        <p className="text-sm">{val.hof_contact}</p>
+                        <div className="flex items-center">
+                          <p className="text-sm">{val.hof_contact}</p>
+                          <span
+                            onClick={() => handleWaclick(val.hof_contact)}
+                            className="text-lg ml-4"
+                          >
+                            <FaWhatsapp />
+                          </span>
+                          <span
+                            onClick={() => handleCall(val.hof_contact)}
+                            className="text-lg ml-4"
+                          >
+                            <FaPhoneAlt />
+                          </span>
+                        </div>
                       </Col>
                     </Row>
                   </div>
@@ -253,7 +272,7 @@ const ListPage = () => {
         </Button>
       </Header>
       {displayLoader ? (
-        <div className="absolute z-50 top-0 left-0 w-screen h-screen bg-white/70 flex items-center justify-center">
+        <div className="fixed z-50 top-0 left-0 w-screen h-screen bg-white/70 flex items-center justify-center">
           <Spin size="large" />
         </div>
       ) : null}
